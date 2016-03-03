@@ -1,0 +1,206 @@
+---
+title: 'STA304'
+author: "Neil Montgomery"
+date: "2016-03-03"
+output: 
+  ioslides_presentation: 
+    css: 'styles.css' 
+    widescreen: true 
+    transition: 0.001
+---
+\newcommand{\E}[1]{E{\left(#1\right)}}
+\newcommand{\flist}[2]{\{#1_1, #1_2, \ldots, #1_#2\}}
+\newcommand{\fulist}[3]{\{#1_{{#2}1}, #1_{{#2}2}, \ldots, #1_{{#2}{#3}}\}}
+\renewcommand{\bar}[1]{\overline{#1}}
+\newcommand{\SE}[1]{\sqrt{\hat{V}(#1)}}
+
+
+```{r, echo=FALSE, message=FALSE}
+## Tx stuff
+library(rio)
+library(dplyr)
+tx <- import("tx.csv")
+tx$Size <- paste0(tx$Size, "KVA")
+N_tx <- nrow(tx)
+n_tx <- 600
+
+library(knitr)
+tx %>% 
+  group_by(Size) %>% 
+  summarise(N=n(), W = n()/nrow(tx)) -> tx_by_size
+
+set.seed(1)
+tx_srs <- sample_n(tx, n_tx)
+
+tx_srs %>% 
+  summarize(mean = mean(Age), sd = sd(Age), 
+            B = 2*sqrt(var(Age)/n_tx*(N_tx-n_tx)/N_tx)) -> tx_srs_est
+
+set.seed(2)
+tx %>% 
+  group_by(Size) %>% 
+  sample_frac(n_tx/N_tx) -> tx_strat
+
+tx_strat %>% 
+  group_by(Size) %>% 
+  summarise(n = n(), means = mean(Age), variances = var(Age), sds = sd(Age)) -> tx_strat_summ
+```
+
+```{r, echo=FALSE}
+## Fittings stuff
+fittings <- import("fittings.csv")
+N_fittings <- nrow(fittings)
+fittings %>% 
+  group_by(Municipality) %>% 
+  summarize(N = n(), W = n()/N_fittings) -> fittings_by_mun
+n_fittings <- 1000
+```
+
+```{r, echo=FALSE}
+set.seed(500)
+fittings %>% 
+  group_by(Municipality) %>% 
+  sample_frac(n_fittings/N_fittings) -> fittings_strat
+```
+
+```{r, echo=FALSE}
+fittings_strat %>% 
+  group_by(Municipality) %>% 
+  summarize(n=n(), mean=mean(Age), sd = sd(Age)) -> fittings_strat_summ
+```
+
+```{r, echo=FALSE}
+fittings_strat %>% 
+  group_by(Municipality) %>% 
+  summarise(n=n(), mean=mean(Age), var=var(Age)) %>% 
+  left_join(., fittings_by_mun, "Municipality") %>% 
+  mutate(W_mean = mean*W, W_varhat = W^2*var/n*(N_fittings-n)/N_fittings) -> f_st
+B_st <- 2*sqrt(sum(f_st$var / f_st$n * (1 - f_st$n/f_st$N) * f_st$W^2))
+```
+
+```{r, echo=FALSE}
+fittings %>% sample_n(999) %>% summarize(mean=mean(Age), sd(Age), B =2*sd(Age)/sqrt(999)*(1-999/N_fittings)) -> f_srs
+```
+
+
+
+# stratified sampling: proportions and totals
+
+## back to the basic analysis
+
+The analysis of a stratified sample comes down to weighted combination of a few simple random samples. 
+$$\begin{align*}
+\bar y_{st} &= \sum_{i=1}^L W_i\bar{y}_i\\
+\hat V(\bar y_{st}) &= \sum_{i=1}^L W_i^2 \hat V(\bar{y}_i)\\
+\hat\tau &= N\bar y_{st}\\
+\hat V(\hat\tau) &= N^2V(\bar y_{st})
+\end{align*}$$
+(The last two lines are a little different in the book...but obviously equal.)
+
+## counts and proportions (stratified)
+
+The weight concept $W_i$ is the same. 
+
+So just replace $\bar{y}_i$ with $\hat p_i$ and use the proportion version of the  $\hat V$ formula, which is:
+
+$$\hat V(\hat p_i) =  \frac{\hat{p_i}\hat{q_i}}{n-1}\frac{N-n}{N}$$
+
+where $\hat q_i = 1 - \hat p_i$.
+
+## proportion example - transformers { .build }
+
+For example, in the transformer dataset we've been using (stratified by the `Size` variable), let's estimate the proportion manufactured by Nema and provide a 95% confidence interval. Here is an overall summary of the situation:
+
+```{r, echo=FALSE}
+tx_strat %>% 
+  group_by(Size) %>% 
+  summarize(n=n(), p_Nema = mean(Manufacturer=="Nema")) -> tx_strat_nema_summ
+tx_ss_Nema <- left_join(tx_by_size, tx_strat_nema_summ, "Size") 
+
+tx_ss_Nema %>% 
+  mutate("V-hat-p_i" = p_Nema*(1-p_Nema)/n*(N - n)/N,
+         "W*p_Nema" = W*p_Nema, "W^2*V-hat-p_i" = W^2 * `V-hat-p_i`) -> tx_ss_Nema_aug
+kable(tx_ss_Nema_aug)
+
+tx_ss_Nema_aug %>% 
+  summarize(p_st=sum(`W*p_Nema`), B=2*sqrt(sum(`W^2*V-hat-p_i`))) -> nema_CI
+```
+
+&nbsp;
+
+The confidence interval is $`r nema_CI$p_st` \pm `r nema_CI$B`$
+
+## count example - transformers { .build }
+
+The company wants permission to spend money to replace all the transformers that are over 50 years old. What should be budget be for this project? What error bound can we put on the budget?
+
+We need to count of transformers over 50 years old. There is an `Age` variable in the data. Here is a summary of the situation:
+
+```{r, echo=FALSE}
+tx_strat %>% 
+  group_by(Size) %>% 
+  summarize(n=n(), p_old = mean(Age > 50)) -> tx_strat_old_summ
+tx_ss_old <- left_join(tx_by_size, tx_strat_old_summ, "Size") 
+
+tx_ss_old %>% 
+  mutate("V-hat-p_i" = p_old*(1-p_old)/n*(N - n)/N,
+         "W*p_old" = W*p_old, "W^2*V-hat-p_i" = W^2 * `V-hat-p_i`) -> tx_ss_old_aug
+kable(tx_ss_old_aug)
+
+tx_ss_old_aug %>% 
+  summarize(p_st=sum(`W*p_old`), B=2*sqrt(sum(`W^2*V-hat-p_i`))) -> old_CI
+```
+
+&nbsp;
+
+The population size is `r N_tx`. So the estimated count is `r N_tx*old_CI$p_st` and the usual bound on the error of estimate is `r N_tx*old_CI$B`. 
+
+Convert to dollar amounts (for the budget) by multiplying by the unit cost.
+
+## counts/proportion stratified sample size { .build }
+
+Use essentially the same formula as before, but the population variance is now $p_iq_i$. Given an allocation $a_i$:
+
+$$n = \frac{\sum_{i=1}^L N_i^2p_iq_i/a_i}{N^2B^2/4 + \sum_{i=1}^L N_i p_iq_i}$$
+
+Better is to divide through by $N^2$:
+$$n = \frac{\sum_{i=1}^L W_i^2 p_iq_i/a_i}{B^2/4 + \frac{1}{N}\sum_{i=1}^L W_i p_iq_i}$$
+
+And $p_i$ is unknown and must be guessed, using the usual proportion guessing guidelines (use known information closest to 0.5). 
+
+## example - count stratified sample size
+
+The electricity regulator demands a bound on the error of estimating the true proportion of 50+ year old transformers to be no more than 500 units. What is the sample size required to fulfil this requirement?
+
+First, change the bound from a "count" requirement to a"proportion" requirement, which is $500/`r N_tx` = `r 500/N_tx` = B$. 
+
+The company decides on proportional allocation among the size ratings. We'll pretend that previous sample never happened and suppose that the company thinks between 10% and 20% of transformers are over 50 years old.
+
+Then the formula reduces (noice-ly) to:
+$$n = \frac{pq}{B^2/4 + \frac{1}{N}pq}$$
+in which we can use the guess of $p=0.2$. The sample size required is `r round(0.2*0.8/((500/N_tx)^2/4 + 0.2*0.8/N_tx), 2)`.
+
+## optimal allocation
+
+The optimal allocation formula also stays the same with $\sigma_i$ replaced with $p_iq_i$, becoming:
+
+Textbook formula (bad for hand calculation):
+$$a_i = \frac{N_ip_iq_i \big/ \sqrt{c_i}}{\sum_{k=1}^L N_kp_kq_k \big/ \sqrt{c_k}}$$
+
+Better for hand calculation is to divide by $N$ to get:
+$$a_i = \frac{W_ip_iq_i \big/ \sqrt{c_i}}{\sum_{k=1}^L W_kp_kq_k \big/ \sqrt{c_k}}$$
+
+## example count optimal allocation
+
+This is really stretching the story, but suppose for some bizarre reason `100KVA` transformers are more costly to sample. Say they cost $10 each while the other two sizes cost $5 each. Here is a summary of the situation:
+
+```{r, echo = FALSE}
+tx_ss_old_aug %>% 
+  mutate(c_i = c(10, 5, 5), 
+         "p_i*q_i" = 0.8*0.2,
+         "W_i*p_i*q_i/sqrt(c_i)" = W*`p_i*q_i`/c_i) %>% 
+  select(Size, N, W, `p_i*q_i`, c_i,
+        `W_i*p_i*q_i/sqrt(c_i)`) -> tx_by_size_cost
+kable(tx_by_size_cost)
+```
+
