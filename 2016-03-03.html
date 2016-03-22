@@ -102,7 +102,7 @@
 {\overline{y}}_{st} &amp;= \sum_{i=1}^L W_i{\overline{y}}_i\\
 \hat V({\overline{y}}_{st}) &amp;= \sum_{i=1}^L W_i^2 \hat V({\overline{y}}_i)\\
 \hat\tau &amp;= N{\overline{y}}_{st}\\
-\hat V(\hat\tau) &amp;= N^2V({\overline{y}}_{st})
+\hat V(\hat\tau) &amp;= N^2\hat V({\overline{y}}_{st})
 \end{align*}\](The last two lines are a little different in the book&#8230;but obviously equal.)</p>
 
 </article></slide><slide class=''><hgroup><h2>counts and proportions (stratified)</h2></hgroup><article  id="counts-and-proportions-stratified">
@@ -111,7 +111,7 @@
 
 <p>So just replace \({\overline{y}}_i\) with \(\hat p_i\) and use the proportion version of the \(\hat V\) formula, which is:</p>
 
-<p>\[\hat V(\hat p_i) =  \frac{\hat{p_i}\hat{q_i}}{n-1}\frac{N-n}{N}\]</p>
+<p>\[\hat V(\hat p_i) =  \frac{\hat{p_i}\hat{q_i}}{n_i-1}\frac{N_i-n_i}{N_i}\]</p>
 
 <p>where \(\hat q_i = 1 - \hat p_i\).</p>
 
@@ -243,11 +243,11 @@
 
 </article></slide><slide class=''><hgroup><h2>optimal allocation</h2></hgroup><article  id="optimal-allocation">
 
-<p>The optimal allocation formula also stays the same with \(\sigma_i\) replaced with \(p_iq_i\), becoming:</p>
+<p>The optimal allocation formula also stays the same with \(\sigma_i\) replaced with \(\sqrt{p_iq_i}\), becoming:</p>
 
-<p>Textbook formula (bad for hand calculation):\[a_i = \frac{N_ip_iq_i \big/ \sqrt{c_i}}{\sum_{k=1}^L N_kp_kq_k \big/ \sqrt{c_k}}\]</p>
+<p>Textbook formula (bad for hand calculation):\[a_i = \frac{N_i\sqrt{p_iq_i} \big/ \sqrt{c_i}}{\sum_{k=1}^L N_k\sqrt{p_kq_k} \big/ \sqrt{c_k}}\]</p>
 
-<p>Better for hand calculation is to divide by \(N\) to get:\[a_i = \frac{W_ip_iq_i \big/ \sqrt{c_i}}{\sum_{k=1}^L W_kp_kq_k \big/ \sqrt{c_k}}\]</p>
+<p>Better for hand calculation is to divide by \(N\) to get:\[a_i = \frac{W_i\sqrt{p_iq_i} \big/ \sqrt{c_i}}{\sum_{k=1}^L W_k\sqrt{p_kq_k} \big/ \sqrt{c_k}}\]</p>
 
 </article></slide><slide class=''><hgroup><h2>example count optimal allocation</h2></hgroup><article  id="example-count-optimal-allocation">
 
@@ -256,11 +256,11 @@
 <table class = 'rmdtable'>
 <tr class="header">
 <th align="left">Size</th>
-<th align="right">N</th>
-<th align="right">W</th>
+<th align="right">N_i</th>
+<th align="right">W_i</th>
 <th align="right">p_i*q_i</th>
 <th align="right">c_i</th>
-<th align="right">W_i<em>p_i</em>q_i/sqrt(c_i)</th>
+<th align="right">W_i<em>sqrt(p_i</em>q_i/c_i)</th>
 </tr>
 <tr class="odd">
 <td align="left">100KVA</td>
@@ -268,7 +268,7 @@
 <td align="right">0.2587340</td>
 <td align="right">0.16</td>
 <td align="right">10</td>
-<td align="right">0.0041397</td>
+<td align="right">0.0327276</td>
 </tr>
 <tr class="even">
 <td align="left">50KVA</td>
@@ -276,7 +276,7 @@
 <td align="right">0.3797994</td>
 <td align="right">0.16</td>
 <td align="right">5</td>
-<td align="right">0.0121536</td>
+<td align="right">0.0679406</td>
 </tr>
 <tr class="odd">
 <td align="left">75KVA</td>
@@ -284,7 +284,7 @@
 <td align="right">0.3614666</td>
 <td align="right">0.16</td>
 <td align="right">5</td>
-<td align="right">0.0115669</td>
+<td align="right">0.0646611</td>
 </tr>
 </table></article></slide>
 

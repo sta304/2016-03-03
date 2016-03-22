@@ -93,7 +93,7 @@ $$\begin{align*}
 \bar y_{st} &= \sum_{i=1}^L W_i\bar{y}_i\\
 \hat V(\bar y_{st}) &= \sum_{i=1}^L W_i^2 \hat V(\bar{y}_i)\\
 \hat\tau &= N\bar y_{st}\\
-\hat V(\hat\tau) &= N^2V(\bar y_{st})
+\hat V(\hat\tau) &= N^2\hat V(\bar y_{st})
 \end{align*}$$
 (The last two lines are a little different in the book...but obviously equal.)
 
@@ -103,7 +103,7 @@ The weight concept $W_i$ is the same.
 
 So just replace $\bar{y}_i$ with $\hat p_i$ and use the proportion version of the  $\hat V$ formula, which is:
 
-$$\hat V(\hat p_i) =  \frac{\hat{p_i}\hat{q_i}}{n-1}\frac{N-n}{N}$$
+$$\hat V(\hat p_i) =  \frac{\hat{p_i}\hat{q_i}}{n_i-1}\frac{N_i-n_i}{N_i}$$
 
 where $\hat q_i = 1 - \hat p_i$.
 
@@ -182,13 +182,13 @@ in which we can use the guess of $p=0.2$. The sample size required is `r round(0
 
 ## optimal allocation
 
-The optimal allocation formula also stays the same with $\sigma_i$ replaced with $p_iq_i$, becoming:
+The optimal allocation formula also stays the same with $\sigma_i$ replaced with $\sqrt{p_iq_i}$, becoming:
 
 Textbook formula (bad for hand calculation):
-$$a_i = \frac{N_ip_iq_i \big/ \sqrt{c_i}}{\sum_{k=1}^L N_kp_kq_k \big/ \sqrt{c_k}}$$
+$$a_i = \frac{N_i\sqrt{p_iq_i} \big/ \sqrt{c_i}}{\sum_{k=1}^L N_k\sqrt{p_kq_k} \big/ \sqrt{c_k}}$$
 
 Better for hand calculation is to divide by $N$ to get:
-$$a_i = \frac{W_ip_iq_i \big/ \sqrt{c_i}}{\sum_{k=1}^L W_kp_kq_k \big/ \sqrt{c_k}}$$
+$$a_i = \frac{W_i\sqrt{p_iq_i} \big/ \sqrt{c_i}}{\sum_{k=1}^L W_k\sqrt{p_kq_k} \big/ \sqrt{c_k}}$$
 
 ## example count optimal allocation
 
@@ -198,9 +198,11 @@ This is really stretching the story, but suppose for some bizarre reason `100KVA
 tx_ss_old_aug %>% 
   mutate(c_i = c(10, 5, 5), 
          "p_i*q_i" = 0.8*0.2,
-         "W_i*p_i*q_i/sqrt(c_i)" = W*`p_i*q_i`/c_i) %>% 
-  select(Size, N, W, `p_i*q_i`, c_i,
-        `W_i*p_i*q_i/sqrt(c_i)`) -> tx_by_size_cost
+         "W_i*sqrt(p_i*q_i/c_i)" = W*sqrt(`p_i*q_i`/c_i)) -> FOO
+FOO %>% 
+  select(Size, N_i=N, W_i=W, `p_i*q_i`, c_i,
+        `W_i*sqrt(p_i*q_i/c_i)`) -> tx_by_size_cost
 kable(tx_by_size_cost)
 ```
+
 
